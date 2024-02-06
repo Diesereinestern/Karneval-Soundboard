@@ -2,6 +2,7 @@ import pygame
 import tkinter as tk
 from tkinter import ttk
 import os
+import config
 
 class SoundboardApp:
     def __init__(self, master):
@@ -9,7 +10,7 @@ class SoundboardApp:
         self.master.title("Star's Soundboard")
 
         # Set the directory path where your MP3 files are located
-        self.directory_path = ""
+        self.directory_path = config.directory_path
 
         # Get a list of all MP3 files in the directory
         self.sound_files = [f for f in os.listdir(self.directory_path) if f.endswith(".mp3")]
@@ -24,6 +25,9 @@ class SoundboardApp:
         self.label_current_song = ttk.Label(self.master, text="Current Song: None")
         self.label_current_song.pack(pady=10)
 
+        self.label_time_remaining = ttk.Label(self.master, text="Time Remaining: -")
+        self.label_time_remaining.pack(pady=10)
+
         self.button_start = ttk.Button(self.master, text="Start", command=self.start_queue)
         self.button_start.pack(pady=10)
 
@@ -35,22 +39,19 @@ class SoundboardApp:
         self.master.bind("<Left>", self.play_previous)
         self.master.bind("<Escape>", self.stop_queue)
 
-        # Customized order of songs with timestamps (in seconds)
-        self.custom_order = [
-            {"file": "Song1.mp3", "start_time": 15, "end_time": 37},
-            {"file": "Song2.mp3", "start_time": 60, "end_time": 92},
-        ]
+        # Customized list of songs with timestamps (in seconds)
+        self.queue = config.queue
 
         self.timer_id = None
 
     def start_queue(self):
-        if not self.playing and self.current_index < len(self.custom_order):
+        if not self.playing and self.current_index < len(self.queue):
             self.playing = True
             self.play_sound()
 
     def play_sound(self):
         if self.playing:
-            current_song = self.custom_order[self.current_index]
+            current_song = self.queue[self.current_index]
             self.label_current_song.config(text=f"Current Song: {current_song['file']}")
 
             full_path = os.path.join(self.directory_path, current_song["file"])
@@ -61,6 +62,10 @@ class SoundboardApp:
 
             pygame.mixer.music.set_volume(self.volume)
             pygame.mixer.music.play(start=start_time)
+
+            # Calculate remaining time and update label
+            remaining_time = end_time - pygame.mixer.music.get_pos() / 1000
+            self.label_time_remaining.config(text=f"Time Remaining: {remaining_time:.2f} seconds")
 
             # Set a timer to pause the song at the specified end time
             self.timer_id = self.master.after(int((end_time - start_time) * 1000), self.pause_at_end_time)
@@ -76,7 +81,7 @@ class SoundboardApp:
             pygame.mixer.music.stop()
             if self.timer_id is not None:
                 self.master.after_cancel(self.timer_id)  # Cancel the timer for the current song
-            self.current_index = (self.current_index + 1) % len(self.custom_order)
+            self.current_index = (self.current_index + 1) % len(self.queue)
             self.play_sound()
 
     def play_previous(self, event=None):
@@ -85,7 +90,7 @@ class SoundboardApp:
             pygame.mixer.music.stop()
             if self.timer_id is not None:
                 self.master.after_cancel(self.timer_id)  # Cancel the timer for the current song
-            self.current_index = (self.current_index - 1) % len(self.custom_order)
+            self.current_index = (self.current_index - 1) % len(self.queue)
             self.play_sound()
 
     def stop_queue(self, event=None):
