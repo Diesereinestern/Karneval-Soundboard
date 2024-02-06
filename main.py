@@ -25,9 +25,6 @@ class SoundboardApp:
         self.label_current_song = ttk.Label(self.master, text="Current Song: None")
         self.label_current_song.pack(pady=10)
 
-        self.label_time_remaining = ttk.Label(self.master, text="Time Remaining: -")
-        self.label_time_remaining.pack(pady=10)
-
         self.button_start = ttk.Button(self.master, text="Start", command=self.start_queue)
         self.button_start.pack(pady=10)
 
@@ -62,10 +59,6 @@ class SoundboardApp:
 
             pygame.mixer.music.set_volume(self.volume)
             pygame.mixer.music.play(start=start_time)
-
-            # Calculate remaining time and update label
-            remaining_time = end_time - pygame.mixer.music.get_pos() / 1000
-            self.label_time_remaining.config(text=f"Time Remaining: {remaining_time:.2f} seconds")
 
             # Set a timer to pause the song at the specified end time
             self.timer_id = self.master.after(int((end_time - start_time) * 1000), self.pause_at_end_time)
