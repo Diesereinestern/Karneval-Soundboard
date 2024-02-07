@@ -25,6 +25,9 @@ class SoundboardApp:
         self.label_current_song = ttk.Label(self.master, text="Current Song: None")
         self.label_current_song.pack(pady=10)
 
+        self.label_countdown = ttk.Label(self.master, text="Countdown: --:--")
+        self.label_countdown.pack(pady=5)
+
         self.button_start = ttk.Button(self.master, text="Start", command=self.start_queue)
         self.button_start.pack(pady=10)
 
@@ -46,6 +49,7 @@ class SoundboardApp:
         self.queue = config.queue
 
         self.timer_id = None
+        self.countdown_timer_id = None
 
     def start_queue(self, event=None):
         if not self.playing and self.current_index < len(self.queue):
@@ -53,11 +57,26 @@ class SoundboardApp:
             self.play_sound()
             # Hide the start button after it's been pressed
             self.button_start.pack_forget()
+            # Start countdown timer
+            self.start_countdown_timer()
+
+    def start_countdown_timer(self):
+        self.update_countdown()
+
+    def update_countdown(self):
+        if self.playing and self.current_index < len(self.queue):
+            current_song = self.queue[self.current_index]
+            start_time = current_song["start_time"]
+            end_time = current_song["end_time"]
+            clip_length = end_time - start_time
+            remaining_time = int(clip_length - pygame.mixer.music.get_pos() / 1000)
+            self.label_countdown.config(text=f"Fadeout in: {remaining_time // 60:02d}:{remaining_time % 60:02d}")
+            self.countdown_timer_id = self.master.after(1000, self.update_countdown)
 
     def play_sound(self):
         if self.playing:
             current_song = self.queue[self.current_index]
-            self.label_current_song.config(text=f"Current Song: {current_song['file']}")
+            self.label_current_song.config(text=f"Playing: {current_song['file']}")
 
             full_path = os.path.join(self.directory_path, current_song["file"])
             pygame.mixer.music.load(full_path)
@@ -82,8 +101,11 @@ class SoundboardApp:
             pygame.mixer.music.stop()
             if self.timer_id is not None:
                 self.master.after_cancel(self.timer_id)  # Cancel the timer for the current song
+            if self.countdown_timer_id is not None:
+                self.master.after_cancel(self.countdown_timer_id)  # Cancel the countdown timer
             self.current_index = (self.current_index + 1) % len(self.queue)
             self.play_sound()
+            self.start_countdown_timer()
 
     def play_previous(self, event=None):
         if self.playing:
@@ -91,14 +113,24 @@ class SoundboardApp:
             pygame.mixer.music.stop()
             if self.timer_id is not None:
                 self.master.after_cancel(self.timer_id)  # Cancel the timer for the current song
+            if self.countdown_timer_id is not None:
+                self.master.after_cancel(self.countdown_timer_id)  # Cancel the countdown timer
             self.current_index = (self.current_index - 1) % len(self.queue)
             self.play_sound()
+            self.start_countdown_timer()
 
     def stop_queue(self, event=None):
+
+
         if self.playing:
             self.playing = False
             pygame.mixer.music.stop()
-            self.label_current_song.config(text="Current Song: None")
+            self.label_current_song.config(text="Playing: //")
+            if self.countdown_timer_id is not None:
+                self.master.after_cancel(self.countdown_timer_id)  # Cancel the countdown timer
+            if self.timer_id is not None:
+                self.master.after_cancel(self.timer_id)  # Cancel the pause_at_end_time timer
+        restart_app(self.master)
 
     def update_volume(self, event):
         self.volume = self.volume_scale.get()
@@ -118,8 +150,13 @@ class SoundboardApp:
             pygame.mixer.music.set_volume(self.volume)
             self.volume_scale.set(self.volume)
 
+def restart_app(root):
+    # Close the current Tkinter window
+    root.destroy()
+    # Recreate the Tkinter window
+    main()
 
-if __name__ == "__main__":
+def main():
     root = tk.Tk()
 
     # Get the screen width and height
@@ -135,3 +172,5 @@ if __name__ == "__main__":
     app = SoundboardApp(root)
     root.mainloop()
 
+if __name__ == "__main__":
+    main()
