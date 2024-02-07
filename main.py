@@ -19,7 +19,7 @@ class SoundboardApp:
         pygame.init()
         self.current_index = 0
         self.playing = False
-        self.volume = 0.5  # Initial volume level
+        self.volume = 1  # Initial volume level
 
         # Tkinter UI elements
         self.label_current_song = ttk.Label(self.master, text="Current Song: None")
@@ -32,19 +32,27 @@ class SoundboardApp:
                                       variable=tk.DoubleVar(value=self.volume), command=self.update_volume)
         self.volume_scale.pack(pady=10)
 
+        # Start button & Emergency switch off
+        self.master.bind("<Return>", self.start_queue)
+        self.master.bind("<Escape>", self.stop_queue)
+        # Skip buttons
         self.master.bind("<Right>", self.play_next)
         self.master.bind("<Left>", self.play_previous)
-        self.master.bind("<Escape>", self.stop_queue)
+        # Volume control
+        self.master.bind("<Up>", self.increase_volume)
+        self.master.bind("<Down>", self.decrease_volume)
 
         # Customized list of songs with timestamps (in seconds)
         self.queue = config.queue
 
         self.timer_id = None
 
-    def start_queue(self):
+    def start_queue(self, event=None):
         if not self.playing and self.current_index < len(self.queue):
             self.playing = True
             self.play_sound()
+            # Hide the start button after it's been pressed
+            self.button_start.pack_forget()
 
     def play_sound(self):
         if self.playing:
@@ -96,6 +104,19 @@ class SoundboardApp:
         self.volume = self.volume_scale.get()
         pygame.mixer.music.set_volume(self.volume)
 
+    def increase_volume(self, event=None):
+        # Increase volume by 0.1, but not beyond 1.0 (maximum volume)
+        if self.volume < 1.0:
+            self.volume = min(1.0, self.volume + 0.1)
+            pygame.mixer.music.set_volume(self.volume)
+            self.volume_scale.set(self.volume)
+
+    def decrease_volume(self, event=None):
+        # Decrease volume by 0.1, but not below 0.0 (minimum volume)
+        if self.volume > 0.0:
+            self.volume = max(0.0, self.volume - 0.1)
+            pygame.mixer.music.set_volume(self.volume)
+            self.volume_scale.set(self.volume)
 if __name__ == "__main__":
     root = tk.Tk()
     app = SoundboardApp(root)
