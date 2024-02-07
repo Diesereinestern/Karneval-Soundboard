@@ -117,7 +117,21 @@ class SoundboardApp:
             self.volume = max(0.0, self.volume - 0.1)
             pygame.mixer.music.set_volume(self.volume)
             self.volume_scale.set(self.volume)
+
+
 if __name__ == "__main__":
     root = tk.Tk()
+
+    # Get the screen width and height
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+
+    # Calculate the x and y positions for the window to appear in the center
+    x = (screen_width - 500) // 2  # Adjust 500 as the desired width of the window
+    y = (screen_height - 200) // 2  # Adjust 200 as the desired height of the window
+
+    root.geometry(f"500x200+{x}+{y}")  # Set the geometry with calculated position
+
     app = SoundboardApp(root)
     root.mainloop()
+
